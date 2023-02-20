@@ -16,7 +16,7 @@ trait Helpers
      * @param $keyValue
      * @return string[]
      */
-    public static function select(Collection $collection, $null = false, $keyText = "name", $keyValue = "id")
+    public static function select(Collection $collection, bool $null = false, string $keyText = "name", string $keyValue = "id")
     {
         $result = $collection->pluck($keyText, $keyValue)->toArray();
 
@@ -35,7 +35,7 @@ trait Helpers
      * @param $keyValue
      * @return array
      */
-    public static function vueSelect(Collection $collection, $null = false, $keyText = "name", $keyValue = "id")
+    public static function vueSelect(Collection $collection, bool $null = false, string $keyText = "name", string $keyValue = "id")
     {
         $options = [];
 
@@ -63,7 +63,7 @@ trait Helpers
      * @param string $postfix
      * @return string
      */
-    public function cacheKey($postfix)
+    public function cacheKey(string $postfix)
     {
         $modelKey = $this->getKey();
 

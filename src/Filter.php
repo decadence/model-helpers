@@ -55,10 +55,10 @@ class Filter
      * Применение фильтра на Builder
      * @param Builder $query
      * @param $value
-     * @param $operator
+     * @param string $operator
      * @return Builder
      */
-    public function apply(Builder $query, $value, $operator = "=")
+    public function apply(Builder $query, $value, string $operator = "=")
     {
         // по умолчанию никаких действий не предпринимаем
         return $query;
@@ -75,10 +75,12 @@ class Filter
     }
 
     /**
-     * Применение фильтров к переданным данным
-     * @param $filterData
+     * Применение фильтров на нужном Builder по переданным данным
+     * @param Builder $builder
+     * @param array $filterData
+     * @return Builder
      */
-    public function applyFilters(Builder $builder, $filterData)
+    public function applyFilters(Builder $builder, array $filterData)
     {
         /** @var Filter $filter */
         foreach ($this->filters as $filter) {
@@ -109,12 +111,11 @@ class Filter
                 throw new InvalidArgumentException("Неверный оператор для фильтра");
             }
 
-            // иначе применяем фильтр
-            $filter->apply($builder, $value, $operator);
+            // иначе применяем фильтр, присвоение для наглядности
+            $builder = $filter->apply($builder, $value, $operator);
         }
 
         return $builder;
 
     }
-
 }
