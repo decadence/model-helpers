@@ -1,0 +1,14 @@
+{
+    "name": "decadence/model-helpers",
+    "description": "Функции для моделей",
+
+    "require": {
+        "laravel/framework": "^10.0"
+    },
+
+    "autoload": {
+        "psr-4": {
+            "Decadence\\": "src/"
+        }
+    }
+}
