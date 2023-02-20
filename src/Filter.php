@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Filters;
+namespace Decadence;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
