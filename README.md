@@ -18,3 +18,19 @@
 ```
 
 Если id не передан, запись удаляется из отношения.
+
+## Filter
+```php
+$filterData = request("filter");
+
+$filter = new Filter();
+$filter->addFilter(new \App\Filters\Contractors\Company());
+
+$contractors = $filter->applyFilters($contractors, $filterData);
+
+$contractors = $contractors->get();
+```
+
+В форме делаем так, что у каждого поля есть имя и в массиве содержатся ключи value, operator. value может быть массивом, если фильтр это обрабатывает. В конструктор каждого фильтра можно передавать параметры, если требуется.
+
+
