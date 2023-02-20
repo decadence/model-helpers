@@ -2,6 +2,8 @@
 
 namespace Decadence;
 
+use InvalidArgumentException;
+
 trait Helpers
 {
     /**
@@ -29,16 +31,13 @@ trait Helpers
      * @return bool Был ли изменен состав отношения
      *
      */
-    public function syncMany($name, $data = [], $delete = true)
+    public function syncMany(string $name, array $data = [], bool $delete = true)
     {
         // изменился ли состав записей
         $changed = false;
 
         // текущее значение отношения
         $relation = $this->getRelationValue($name);
-
-        // на случай пустых данных
-        $data = $data ?: [];
 
         // переданные id записей отношения
         $posted = Arr::pluck($data, "id");
@@ -49,7 +48,7 @@ trait Helpers
             // id существующих записей отношения
             $existingIds = $relation->pluck("id")->toArray();
 
-            // находим не переданные id
+            // находим непереданные id
             // разница между существующими и присланными
             $diff = array_diff($existingIds, $posted);
 
@@ -57,25 +56,34 @@ trait Helpers
             foreach ($diff as $toDelete) {
                 $changed = true;
 
-                $this->$name()
-                    ->findOrNew($toDelete)
-                    ->delete();
+                $modelToDelete = $this->$name()
+                    ->find($toDelete);
+
+                // если в отношении есть модель с таким id
+                // удаляем её
+                if($modelToDelete) {
+                    $modelToDelete->delete();
+                }
             }
         }
 
         // проходим по всем переданным строкам
         foreach ($data as $key => $relationData) {
 
-            // можно использовать data_get, но зато сразу видно
-            // ошибку непереданного id
+            // проверяем именно наличия ключа, потому что он может
+            // быть и null
+            if(array_key_exists("id", $relationData)) {
+                throw new InvalidArgumentException("Не найден id для syncMany");
+            }
+
             $relatedId = $relationData["id"];
 
             // находим запись из отношения или создаём новую
             /** @var Model $model */
-            $model = $this->$name()->findOrNew();
+            $model = $this->$name()->findOrNew($relatedId);
 
-            // или поиск через коллекцию, если модели нужны измененные
-            // $model = $relation->find($relationData["id"], $this->$name()->getRelated());
+            // или поиск через Collection, если модели нужны измененные
+            // $model = $relation->find($relatedId, $this->$name()->getRelated());
 
             $model->fill($relationData);
 
