@@ -2,10 +2,61 @@
 
 namespace Decadence;
 
+use Illuminate\Database\Eloquent\Collection;
 use InvalidArgumentException;
 
 trait Helpers
 {
+
+    /**
+     * Коллекция к массиву для select
+     * @param Collection $collection
+     * @param $null
+     * @param $keyText
+     * @param $keyValue
+     * @return string[]
+     */
+    public static function select(Collection $collection, $null = false, $keyText = "name", $keyValue = "id")
+    {
+        $result = $collection->pluck($keyText, $keyValue)->toArray();
+
+        if ($null) {
+            $result = ["" => "Не задано"] + $result;
+        }
+
+        return $result;
+    }
+
+    /**
+     * То же самое, но для Vue Select
+     * @param Collection $collection
+     * @param $null
+     * @param $keyText
+     * @param $keyValue
+     * @return array
+     */
+    public static function vueSelect(Collection $collection, $null = false, $keyText = "name", $keyValue = "id")
+    {
+        $options = [];
+
+        if ($null) {
+            $options[] = [
+                "id" => null,
+                "label" => "Не задано"
+            ];
+        }
+
+        // собираем массив по нужным ключам
+        foreach ($collection as $value) {
+            $options[] = [
+                "id" => data_get($value, $keyValue),
+                "label" => data_get($value, $keyText)
+            ];
+        }
+
+        return $options;
+    }
+
     /**
      * Ключ кеширования для модели с учётом времени её
      * обновления
@@ -61,7 +112,7 @@ trait Helpers
 
                 // если в отношении есть модель с таким id
                 // удаляем её
-                if($modelToDelete) {
+                if ($modelToDelete) {
                     $modelToDelete->delete();
                 }
             }
@@ -72,7 +123,7 @@ trait Helpers
 
             // проверяем именно наличия ключа, потому что он может
             // быть и null
-            if(array_key_exists("id", $relationData)) {
+            if (array_key_exists("id", $relationData)) {
                 throw new InvalidArgumentException("Не найден id для syncMany");
             }
 
