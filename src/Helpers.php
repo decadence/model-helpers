@@ -16,7 +16,7 @@ trait Helpers
      * @param $keyValue
      * @return string[]
      */
-    public static function select(Collection $collection, bool $null = false, string $keyText = "name", string $keyValue = "id")
+    public static function formSelect(Collection $collection, bool $null = false, string $keyText = "name", string $keyValue = "id")
     {
         $result = $collection->pluck($keyText, $keyValue)->toArray();
 
