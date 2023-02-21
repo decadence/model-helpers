@@ -4,6 +4,7 @@ namespace Decadence;
 
 use Illuminate\Database\Eloquent\Collection;
 use InvalidArgumentException;
+use Arr;
 
 trait Helpers
 {
@@ -123,7 +124,7 @@ trait Helpers
 
             // проверяем именно наличия ключа, потому что он может
             // быть и null
-            if (array_key_exists("id", $relationData)) {
+            if (!array_key_exists("id", $relationData)) {
                 throw new InvalidArgumentException("Не найден id для syncMany");
             }
 
