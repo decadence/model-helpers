@@ -111,8 +111,9 @@ class Filter
                 throw new InvalidArgumentException("Неверный оператор для фильтра");
             }
 
-            // иначе применяем фильтр, присвоение для наглядности
-            $builder = $filter->apply($builder, $value, $operator);
+            // иначе применяем фильтр,
+            // присвоение не делаем, так как фильтры могут и не возвращать Builder, тогда ему присвоится null
+            $filter->apply($builder, $value, $operator);
         }
 
         return $builder;
