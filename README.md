@@ -51,7 +51,7 @@ $contractors = $contractors->get();
 
 В конструктор каждого фильтра можно передавать параметры, если требуется.
 
-Пример класса фильтра
+### Пример класса фильтра
 
 ```php
 class Company extends Filter
@@ -65,6 +65,8 @@ class Company extends Filter
             $company->whereIn("id", $value);
         });
 
+        // лучше явно возвращать Builder
+        // на случай, если apply используется где-то в присвоении
         return $query;
     }
 }
