@@ -2,7 +2,7 @@
 
 namespace Decadence;
 
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Arr;
 
