@@ -2,6 +2,7 @@
 
 namespace Decadence;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use Arr;
@@ -77,74 +78,98 @@ trait Helpers
 
     /**
      * Синхронизация отношения hasMany
-     * @param string $name Имя отношения
-     * @param array $data Массив данных в определенном формате
+     * @param string $name Имя отношения модели
+     * @param array $data Массив данных
      * @param bool $delete Удалять ли записи, данные для которых не переданы
+     * @param array $uniqueKeys Массив ключей, по которым ищется и уникально идентифицируется связанная запись
+     * @param array $fillable Массив ключей, которые допустимы для массового заполнения
      * @return bool Был ли изменен состав отношения
      *
      */
-    public function syncMany(string $name, array $data = [], bool $delete = true)
+    public function syncHasMany(
+        string $name,
+        array  $data,
+        bool   $delete = true,
+        array  $uniqueKeys = ["id"],
+        array  $fillable = [])
     {
+
+        // ID записей, которые были обработаны в процессе синхронизации
+        $foundIds = [];
+
         // изменился ли состав записей
         $changed = false;
 
-        // текущее значение отношения
-        $relation = $this->getRelationValue($name);
+        // проходим по всем переданным строкам
+        foreach ($data as $relationRowKey => $relationRow) {
 
-        // переданные id записей отношения
-        $posted = Arr::pluck($data, "id");
-
-        // если включено удаление непереданных отношений
-        if ($delete) {
-
-            // id существующих записей отношения
-            $existingIds = $relation->pluck("id")->toArray();
-
-            // находим непереданные id
-            // разница между существующими и присланными
-            $diff = array_diff($existingIds, $posted);
-
-            // и удаляем их
-            foreach ($diff as $toDelete) {
-                $changed = true;
-
-                $modelToDelete = $this->$name()
-                    ->find($toDelete);
-
-                // если в отношении есть модель с таким id
-                // удаляем её
-                if ($modelToDelete) {
-                    $modelToDelete->delete();
+            // проверяем наличие ключей, они могут быть и null, но должны быть переданы
+            foreach ($uniqueKeys as $uniqueKey) {
+                if (!array_key_exists($uniqueKey, $relationRow)) {
+                    $exceptionMessage = "Не найден ключ {$uniqueKey} для syncHasMany, индекс строки: {$relationRowKey}";
+                    throw new InvalidArgumentException($exceptionMessage);
                 }
             }
-        }
 
-        // проходим по всем переданным строкам
-        foreach ($data as $key => $relationData) {
+            // получаем массив с ключами для поиска записи
+            $searchKeys = Arr::only($relationRow, $uniqueKeys);
 
-            // проверяем именно наличия ключа, потому что он может
-            // быть и null
-            if (!array_key_exists("id", $relationData)) {
-                throw new InvalidArgumentException("Не найден id для syncMany");
+            // находим запись из отношения по этим ключам или создаём новую
+            /** @var Model $model */
+            $model = $this->$name()
+                ->where($searchKeys)
+                ->firstOrNew();
+
+            // если передан отдельный массив fillable, применяем его к модели
+            // уникальные ключи должны быть в нём, иначе сохранение не будет работать правильно
+            // по умолчанию будут взяты fillable из класса модели
+            if ($fillable) {
+                $model->fillable($fillable);
             }
 
-            $relatedId = $relationData["id"];
+            // заполняем модель атрибутами текущей строки, недопустимые отбросятся
+            $model->fill($relationRow);
 
-            // находим запись из отношения или создаём новую
-            /** @var Model $model */
-            $model = $this->$name()->findOrNew($relatedId);
-
-            // или поиск через Collection, если модели нужны измененные
-            // $model = $relation->find($relatedId, $this->$name()->getRelated());
-
-            $model->fill($relationData);
-
-            // если модель изменена (новая будет изменена в любом случае)
+            // если модель изменена (новая будет изменена в любом случае),
+            // то состав записей изменился
             if ($model->isDirty()) {
                 $changed = true;
             }
 
+            // сохраняем модель в текущем отношении
             $this->$name()->save($model);
+
+            // запоминаем ID найденной или созданной модели
+            $foundIds[] = $model->getKey();
+        }
+
+        // если включено удаление непереданных отношений
+        if ($delete) {
+
+            // находим все записи отношения, где ID
+            // не находится в списке обработанных, а это значит,
+            // что его не передали и нужно его удалить
+
+            /** @var \Illuminate\Database\Eloquent\Collection $modelsToDelete */
+            $modelsToDelete = $this->$name()
+                ->whereKeyNot($foundIds)
+                ->get();
+
+            // и удаляем их через Eloquent, чтобы события отработали
+            /** @var Model $modelToDelete */
+            foreach ($modelsToDelete as $modelToDelete) {
+
+                $deleteResult = $modelToDelete->delete();
+
+                // проверяем результат удаления, потому что в deleting-событии
+                // удаление модели может быть отменено
+                if ($deleteResult) {
+                    // если модель успешно удалена, то
+                    // в этом случае происходит изменение состава записей
+                    $changed = true;
+                }
+
+            }
         }
 
         return $changed;
